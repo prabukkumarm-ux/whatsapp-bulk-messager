@@ -25,7 +25,6 @@ class WhatsAppManager extends EventEmitter {
       puppeteer: {
         headless: 'new',
         ignoreHTTPSErrors: true,
-        executablePath: process.env.CHROME_PATH || undefined, 
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -38,13 +37,10 @@ class WhatsAppManager extends EventEmitter {
           '--disable-canvas-aa', 
           '--disable-2d-canvas-clip-aa',
           '--disable-gl-drawing-for-tests',
-          '--disable-dev-shm-usage'
+          '--disable-dev-shm-usage',
+          '--js-flags="--max-old-space-size=400"' // 🧠 Force Node to stay within Render's RAM
         ],
-        timeout: 180000 // ⏳ 3 mins (Render can be slow to start)
-      },
-      webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1015694857-alpha.html'
+        timeout: 180000 
       }
     });
 
