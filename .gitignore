@@ -1,0 +1,7 @@
+node_modules/
+data/session/
+data/uploads/
+data/campaigns/
+data/wablast.json
+.DS_Store
+.env
