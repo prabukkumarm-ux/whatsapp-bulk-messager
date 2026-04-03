@@ -24,7 +24,7 @@ class WhatsAppManager extends EventEmitter {
       authStrategy: new LocalAuth({ dataPath: sessionDir }),
       puppeteer: {
         headless: 'new',
-        ignoreHTTPSErrors: true, // 🔒 Critical if SSL is failing
+        ignoreHTTPSErrors: true,
         executablePath: process.env.CHROME_PATH || undefined, 
         args: [
           '--no-sandbox',
@@ -33,10 +33,14 @@ class WhatsAppManager extends EventEmitter {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--single-process', // Faster on Render Free Tier ⚡
-          '--disable-gpu'
+          '--single-process', 
+          '--disable-gpu',
+          '--disable-canvas-aa', 
+          '--disable-2d-canvas-clip-aa',
+          '--disable-gl-drawing-for-tests',
+          '--disable-dev-shm-usage'
         ],
-        timeout: 120000 
+        timeout: 180000 // ⏳ 3 mins (Render can be slow to start)
       },
       webVersionCache: {
         type: 'remote',

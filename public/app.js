@@ -14,13 +14,27 @@ async function api(path, opts = {}) {
     ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
     ...(opts.headers || {}) 
   };
-  const res = await fetch(API + path, { ...opts, headers });
   
-  if (res.status === 401 && path !== '/api/auth/login') {
-    logout();
-    return { error: 'Unauthorized' };
+  try {
+    const res = await fetch(API + path, { ...opts, headers });
+    
+    if (res.status === 401 && path !== '/api/auth/login') {
+      logout();
+      return { error: 'Session expired' };
+    }
+
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      return await res.json();
+    } else {
+      const text = await res.text();
+      console.error('Non-JSON response:', text.substring(0, 100));
+      return { error: 'Server error' };
+    }
+  } catch (err) {
+    console.error('API Error:', err);
+    return { error: 'Network error' };
   }
-  return res.json();
 }
 
 // 🔓 AUTH HANDLING
