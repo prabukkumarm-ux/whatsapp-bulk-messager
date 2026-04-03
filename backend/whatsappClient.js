@@ -23,7 +23,8 @@ class WhatsAppManager extends EventEmitter {
     this.client = new Client({
       authStrategy: new LocalAuth({ dataPath: sessionDir }),
       puppeteer: {
-        headless: 'new', // Much more stable on Windows 💻
+        headless: 'new',
+        ignoreHTTPSErrors: true, // 🔒 Critical if SSL is failing
         executablePath: process.env.CHROME_PATH || undefined, 
         args: [
           '--no-sandbox',
@@ -32,9 +33,10 @@ class WhatsAppManager extends EventEmitter {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
+          '--single-process', // Faster on Render Free Tier ⚡
           '--disable-gpu'
         ],
-        timeout: 90000 // Give it 90 seconds to wake up ⏳
+        timeout: 120000 
       },
       webVersionCache: {
         type: 'remote',

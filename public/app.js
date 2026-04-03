@@ -163,16 +163,34 @@ let waInfo = null;
 let sseSource = null;
 
 function connectSSE() {
-  if (!authToken) return; // 🛡️ Safety: Don't sync if not logged in
+  if (!authToken) return;
   if (sseSource) sseSource.close();
+  
+  // SSE Connection
   sseSource = new EventSource(`/api/whatsapp/qr-stream?token=${authToken}`);
   sseSource.onmessage = e => {
     const data = JSON.parse(e.data);
     updateWAStatus(data);
   };
-  sseSource.onerror = () => {
-    setTimeout(connectSSE, 3000);
+
+  // Polling BACKUP (If SSE is blocked by SSL/Proxy)
+  const pollStatus = async () => {
+    if (!authToken || currentPage !== 'connect' && waStatus === 'ready') return;
+    const data = await api('/api/whatsapp/status');
+    if (data && data.status) updateWAStatus(data);
   };
+  
+  const statusPoll = setInterval(pollStatus, 4000);
+
+  sseSource.onerror = () => {
+    console.warn('SSE Error, retrying...');
+  };
+
+  // Clean up on page close or before next connect
+  window.addEventListener('beforeunload', () => {
+    clearInterval(statusPoll);
+    if (sseSource) sseSource.close();
+  });
 }
 
 function updateWAStatus(data) {
