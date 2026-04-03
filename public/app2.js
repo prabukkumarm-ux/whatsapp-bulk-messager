@@ -406,17 +406,27 @@ async function submitCampaign(draft = false) {
   formData.append('contact_ids', JSON.stringify([...selectedContactIds]));
   formData.append('group_ids', JSON.stringify([...selectedGroupIds]));
   formData.append('delay_seconds', $('cp-delay')?.value || '3');
+  formData.append('status', draft ? 'draft' : 'ready');
   mediaFiles.forEach(f => formData.append('media', f));
 
-  const res = await fetch('/api/campaigns', { method: 'POST', body: formData });
+  const res = await fetch('/api/campaigns', { 
+    method: 'POST', 
+    body: formData,
+    headers: {
+      ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+    }
+  });
   const data = await res.json();
   if (!data.success) { toast(data.error || 'Failed to create campaign', 'error'); return; }
 
-  toast(`Campaign created! ${data.total_contacts} contacts.`, 'success');
+  toast(`Campaign created! ${data.total} contacts.`, 'success');
 
   if (!draft) {
-    const send = await api(`/api/campaigns/${data.id}/send`, { method: 'POST' });
-    if (send.success) { toast(`🚀 Sending to ${send.total} contacts!`, 'success'); navigate('campaigns'); }
+    const send = await api(`/api/campaigns/${data.id}/send`, { 
+      method: 'POST',
+      body: JSON.stringify({ contacts: data.contacts })
+    });
+    if (send.success) { toast(`🚀 Sending to ${send.total || data.total} contacts!`, 'success'); navigate('campaigns'); }
     else toast(send.error || 'Failed to start sending', 'error');
   } else {
     navigate('campaigns');

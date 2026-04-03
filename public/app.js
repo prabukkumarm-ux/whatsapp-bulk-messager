@@ -3,9 +3,77 @@
    ============================================= */
 
 const API = '';
+let authToken = localStorage.getItem('wa_token');
 
 // ── Utility helpers ──────────────────────────
 const $ = id => document.getElementById(id);
+
+async function api(path, opts = {}) {
+  const headers = { 
+    'Content-Type': 'application/json',
+    ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+    ...(opts.headers || {}) 
+  };
+  const res = await fetch(API + path, { ...opts, headers });
+  
+  if (res.status === 401 && path !== '/api/auth/login') {
+    logout();
+    return { error: 'Unauthorized' };
+  }
+  return res.json();
+}
+
+// 🔓 AUTH HANDLING
+async function login() {
+  const password = $('login-pass').value;
+  const loginErr = $('login-err');
+  loginErr.style.display = 'none';
+  
+  const r = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) });
+  
+  if (r.token) {
+    authToken = r.token;
+    localStorage.setItem('wa_token', r.token);
+    $('login-overlay').style.display = 'none';
+    toast('Dashboard unlocked!', 'success');
+    initApp();
+  } else {
+    loginErr.style.display = 'block';
+  }
+}
+
+function logout() {
+  if (authToken) {
+    localStorage.removeItem('wa_token');
+    authToken = null;
+    location.reload();
+  }
+}
+
+function initApp() {
+  connectSSE();
+  navigate('dashboard');
+}
+
+// Check auth on load
+document.addEventListener('DOMContentLoaded', () => {
+  if (authToken) {
+    $('login-overlay').style.display = 'none';
+    initApp();
+  } else {
+    // Force show login if no token
+    $('login-overlay').style.display = 'flex';
+  }
+});
+
+// Admin field listener for Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && $('login-overlay').style.display !== 'none') {
+    login();
+  }
+});
+
+// UI Helpers
 const qs = sel => document.querySelector(sel);
 const fmt = n => Number(n || 0).toLocaleString();
 
@@ -27,14 +95,6 @@ function showModal(title, bodyHTML, footerHTML = '') {
 function closeModal() { $('modal-overlay').classList.remove('open'); }
 $('modal-close').addEventListener('click', closeModal);
 $('modal-overlay').addEventListener('click', e => { if (e.target === $('modal-overlay')) closeModal(); });
-
-async function api(path, opts = {}) {
-  const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
-    ...opts
-  });
-  return res.json();
-}
 
 function statusBadge(status) {
   const map = {
@@ -103,8 +163,9 @@ let waInfo = null;
 let sseSource = null;
 
 function connectSSE() {
+  if (!authToken) return; // 🛡️ Safety: Don't sync if not logged in
   if (sseSource) sseSource.close();
-  sseSource = new EventSource('/api/whatsapp/qr-stream');
+  sseSource = new EventSource(`/api/whatsapp/qr-stream?token=${authToken}`);
   sseSource.onmessage = e => {
     const data = JSON.parse(e.data);
     updateWAStatus(data);

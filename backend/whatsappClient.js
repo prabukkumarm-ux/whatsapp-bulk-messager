@@ -23,7 +23,8 @@ class WhatsAppManager extends EventEmitter {
     this.client = new Client({
       authStrategy: new LocalAuth({ dataPath: sessionDir }),
       puppeteer: {
-        headless: true,
+        headless: 'new', // Much more stable on Windows 💻
+        executablePath: process.env.CHROME_PATH || undefined, 
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -32,13 +33,16 @@ class WhatsAppManager extends EventEmitter {
           '--no-first-run',
           '--no-zygote',
           '--disable-gpu'
-        ]
+        ],
+        timeout: 90000 // Give it 90 seconds to wake up ⏳
       },
       webVersionCache: {
         type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1015694857-alpha.html'
       }
     });
+
+    console.log('🚀 Starting WhatsApp Puppeteer browser...');
 
     this.client.on('qr', async (qr) => {
       console.log('📱 QR Code received');

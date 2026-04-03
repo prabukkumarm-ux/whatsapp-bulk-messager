@@ -236,7 +236,13 @@ async function importCSV() {
     const form = new FormData();
     form.append('file', file);
     form.append('group_id', group_id);
-    const r = await fetch('/api/contacts/import-csv', { method: 'POST', body: form }).then(x => x.json());
+    const r = await fetch('/api/contacts/import-csv', { 
+      method: 'POST', 
+      body: form,
+      headers: {
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+      }
+    }).then(x => x.json());
     if (r.success) { toast(`✅ Imported ${r.imported} contacts${r.failed ? `, ${r.failed} failed` : ''}`, 'success'); closeModal(); loadContactsPage(); }
     else toast(r.error || 'Import failed', 'error');
   }
