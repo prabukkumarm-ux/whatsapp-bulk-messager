@@ -34,6 +34,11 @@ router.get('/qr-stream', (req, res) => {
   const current = waManager.getStatus();
   res.write(`data: ${JSON.stringify(current)}\n\n`);
 
+  // 💓 Heartbeat to keep Render connection alive
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 20000); 
+
   const onQR = (qr) => res.write(`data: ${JSON.stringify({ status: 'qr', qr })}\n\n`);
   const onReady = (info) => res.write(`data: ${JSON.stringify({ status: 'ready', info })}\n\n`);
   const onDisconnected = () => res.write(`data: ${JSON.stringify({ status: 'disconnected' })}\n\n`);
@@ -47,6 +52,7 @@ router.get('/qr-stream', (req, res) => {
   waManager.on('authenticated', onAuth);
 
   req.on('close', () => {
+    clearInterval(heartbeat);
     waManager.off('qr', onQR);
     waManager.off('ready', onReady);
     waManager.off('disconnected', onDisconnected);
